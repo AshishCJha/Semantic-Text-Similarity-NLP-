@@ -1,0 +1,91 @@
+# Importing the libraries
+import bs4 as bs
+import numpy as np
+import urllib.request
+import re
+import nltk
+nltk.download('stopwords')
+import heapq
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+
+# getting the data from URL
+source0 = urllib.request.urlopen('https://patents.google.com/patent/US7966282B2/en?q=machine+learning&oq=machine+learning').read()
+source1 = urllib.request.urlopen('https://patents.google.com/patent/JP4589315B2/en?q=machine+learning&oq=machine+learning').read()
+source2 = urllib.request.urlopen('https://patents.google.com/patent/KR101169113B1/en?q=machine+learning&oq=machine+learning').read()
+source3 = urllib.request.urlopen('https://patents.google.com/patent/US7219085B2/en?q=machine+learning&oq=machine+learning').read()
+source4 = urllib.request.urlopen('https://patents.google.com/patent/US8364627B2/en?q=machine+learning&oq=machine+learning').read()
+source5 = urllib.request.urlopen('https://patents.google.com/patent/US6493686B1/en?q=machine+learning&oq=machine+learning').read()
+source6 = urllib.request.urlopen('https://patents.google.com/patent/US7899764B2/en?q=machine+learning&oq=machine+learning').read()
+source7 = urllib.request.urlopen('https://patents.google.com/patent/US6081766A/en?q=machine+learning&oq=machine+learning').read()
+source8 = urllib.request.urlopen('https://patents.google.com/patent/US7103534B2/en?q=machine+learning&oq=machine+learning').read()
+source9 = urllib.request.urlopen('https://patents.google.com/patent/US8682812B1/en?q=machine+learning&oq=machine+learning').read()
+
+# Concatenating the html data from all sources
+input_file = source0 + source1 + source2 + source3 + source4 + source5 + source6 + source7 + source8 + source9
+
+# Extracting html data to text data
+soup = bs.BeautifulSoup(input_file,'lxml')
+text = ""
+for paragraph in soup.find_all('p'):
+    text += paragraph.text
+    
+# Clearing the text data
+text = re.sub(r'\[[0-9]*\]',' ',text)
+text = re.sub(r'\s+',' ',text)
+clean_text = text.lower()
+clean_text = re.sub(r"i'm", "i am", clean_text)
+clean_text = re.sub(r"he's", "he is", clean_text)
+clean_text = re.sub(r"she's", "she is", clean_text)
+clean_text = re.sub(r"that's", "that is", clean_text)
+clean_text = re.sub(r"what's", "what is", clean_text)
+clean_text = re.sub(r"where's", "where is", clean_text)
+clean_text = re.sub(r"how's", "how is", clean_text)
+clean_text = re.sub(r"\'ll", " will", clean_text)
+clean_text = re.sub(r"\'ve", " have", clean_text)
+clean_text = re.sub(r"\'re", " are", clean_text)
+clean_text = re.sub(r"\'d", " would", clean_text)
+clean_text = re.sub(r"n't", " not", clean_text)
+clean_text = re.sub(r"won't", "will not", clean_text)
+clean_text = re.sub(r"can't", "cannot", clean_text)
+clean_text = re.sub(r"[-()\"#/@;:<>{}`+=~|.!?,]", "", clean_text)
+
+# Tokenize sentences
+sentences = nltk.sent_tokenize(text)
+
+# Removing Stopwords
+stop_words = nltk.corpus.stopwords.words('english')
+
+# Word counts 
+word2count = {}
+for word in nltk.word_tokenize(clean_text):
+    if word not in stop_words:
+        if word not in word2count.keys():
+            word2count[word] = 1
+        else:
+            word2count[word] += 1
+            
+# Creating Tfidf Model
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(dataset)
+
+# Visualizing the Tfidf Model
+print(X[0])
+
+# Creating the SVD
+lsa = TruncatedSVD(n_components = 4, n_iter = 100)
+lsa.fit(X)
+
+# First Column of V
+row1 = lsa.components_[3]
+
+# Visualizing the concepts
+terms = vectorizer.get_feature_names()
+for i,comp in enumerate(lsa.components_):
+    componentTerms = zip(terms,comp)
+    sortedTerms = sorted(componentTerms,key=lambda x:x[1],reverse=True)
+    sortedTerms = sortedTerms[:10]
+    print("\nConcept",i,":")
+    for term in sortedTerms:
+        print(term)
+        
